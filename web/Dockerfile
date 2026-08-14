@@ -40,10 +40,10 @@ ENV API_BASE_URL=$API_BASE_URL \
     FIREBASE_APP_ID=$FIREBASE_APP_ID \
     FIREBASE_MEASUREMENT_ID=$FIREBASE_MEASUREMENT_ID
 
-COPY package.json pnpm-lock.yaml ./
+# allowBuilds vive en pnpm-workspace.yaml (pnpm 10); hay que copiarlo ANTES del install
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# pnpm 10 exige approve-builds y falla el Docker build; 9 instala normal.
-RUN npm install -g pnpm@9.15.9
+RUN npm install -g pnpm@10
 
 # Docker: no hay .git → husky no debe instalar hooks
 ENV HUSKY=0 \
