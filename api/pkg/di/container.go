@@ -1793,6 +1793,10 @@ func (container *Container) UserRistrettoCache() *ristretto.Cache[string, entiti
 
 // InitializeTraceProvider initializes the open telemetry trace provider
 func (container *Container) InitializeTraceProvider() func() {
+	if isLocal() {
+		container.logger.Debug("skipping axiom trace provider (ENV=local)")
+		return func() {}
+	}
 	return container.initializeAxiomTraceProvider(container.version, container.projectID)
 }
 
