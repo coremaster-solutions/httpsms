@@ -44,9 +44,19 @@ COPY package.json pnpm-lock.yaml ./
 
 RUN npm install -g pnpm
 
+# Docker: no hay .git → husky falla el `prepare`. pnpm 10 bloquea build scripts sin approve.
+ENV HUSKY=0 \
+    CI=true
+RUN printf 'dangerouslyAllowAllBuilds=true\n' > .npmrc
+
 RUN pnpm install
 
 COPY . .
+# Reaplicar por si COPY . sobrescribe .npmrc del contexto
+RUN printf 'dangerouslyAllowAllBuilds=true\n' > .npmrc
+ENV HUSKY=0 \
+    CI=true
+
 RUN pnpm run generate
 
 # production stage
