@@ -39,8 +39,9 @@ services:
     # Dokploy: Environment del compose → .env en la raíz del proyecto
     env_file:
       - .env
-    ports:
-      - "8000:8000"
+    # Sin bind al host: Dokploy/Traefik enruta al puerto interno
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -69,8 +70,9 @@ services:
         FIREBASE_MESSAGING_SENDER_ID: ${FIREBASE_MESSAGING_SENDER_ID}
         FIREBASE_APP_ID: ${FIREBASE_APP_ID}
         FIREBASE_MEASUREMENT_ID: ${FIREBASE_MEASUREMENT_ID:-}
-    ports:
-      - "3000:3000"
+    # 3000 del host ya estaba ocupado; Dokploy usa el puerto interno del contenedor
+    expose:
+      - "3000"
     depends_on:
       api:
         condition: service_started
