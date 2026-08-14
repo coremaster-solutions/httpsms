@@ -1,36 +1,42 @@
 services:
   postgres:
-    image: postgres:alpine
+    image: postgres:16-alpine
     environment:
       POSTGRES_DB: httpsms
       POSTGRES_PASSWORD: dbpassword
       POSTGRES_USER: dbusername
     volumes:
       - postgres:/var/lib/postgresql/data
-    # No publicar Postgres al host en Dokploy (solo red interna)
+    # Solo red interna del compose (Dokploy no necesita publicar 5432)
     expose:
       - "5432"
-    restart: on-failure
+    restart: unless-stopped
+    # Healthcheck más agresivo: el intervalo 30s + start_period 5s fallaba el deploy
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 30s
-      timeout: 60s
-      retries: 5
-      start_period: 5s
+      test: ["CMD-SHELL", "pg_isready -U dbusername -d httpsms"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
 
   redis:
-    image: redis:latest
-    command: redis-server
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
     volumes:
-      - redis:/var/lib/redis
+      - redis:/data
     expose:
       - "6379"
-    restart: on-failure
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   api:
     build:
       context: ./api
-    # Dokploy: un solo Environment del compose → archivo .env en la raíz del proyecto
+    # Dokploy: Environment del compose → .env en la raíz del proyecto
     env_file:
       - .env
     ports:
@@ -40,12 +46,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
-    restart: on-failure
+    restart: unless-stopped
 
   web:
     build:
       context: ./web
-      # Nuxt se genera en build: estas vars deben existir en el Environment de Dokploy
       args:
         API_BASE_URL: ${API_BASE_URL}
         APP_URL: ${APP_URL}
@@ -69,7 +74,7 @@ services:
     depends_on:
       api:
         condition: service_started
-    restart: on-failure
+    restart: unless-stopped
 
 volumes:
   redis:
